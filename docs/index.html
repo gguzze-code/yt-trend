@@ -150,7 +150,7 @@ function render(){
     return `<div class="row">
       <span class="col-t"><span class="date">${mm}-${dd} </span>${hh}:${mi}</span>
       <div class="col-main">
-        <p><span class="ch">${esc(r.ch)}</span> · <a href="${r.url}" target="_blank" rel="noopener">${esc(r.t)}</a>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
+        <p><span class="ch">${esc(unesc(r.ch))}</span> · <a href="${r.url}" target="_blank" rel="noopener">${esc(unesc(r.t))}</a>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
         <div class="track"><div class="fill" style="width:${w}%"></div></div>
       </div>
       <span class="col-v">${fmt(r.v)}</span>
@@ -160,6 +160,8 @@ function render(){
   }).join("");
 }
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const _ta = document.createElement("textarea");
+const unesc = s => { _ta.innerHTML = s; return _ta.value; };
 
 document.querySelectorAll("#period button").forEach(b=>b.onclick=()=>{period=+b.dataset.v; sel("period",b); render();});
 document.querySelectorAll("#sort button").forEach(b=>b.onclick=()=>{sortNew=b.dataset.v==="new"; sel("sort",b); render();});
