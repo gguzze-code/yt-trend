@@ -90,7 +90,7 @@ a{color:inherit; text-decoration:none}
     <button id="chBtn">채널 관리</button>
   </div>
   <div class="head">
-    <span class="col-t">업로드</span><span style="flex:1">채널 · 제목</span>
+    <span class="col-t">업로드</span><span style="flex:1">제목 · 채널</span>
     <span class="col-v">조회수</span><span class="col-d">전일 +24h</span><span class="col-d">최근 +24h</span>
   </div>
   <div id="rows"></div>
@@ -150,7 +150,7 @@ function render(){
     return `<div class="row">
       <span class="col-t"><span class="date">${mm}-${dd} </span>${hh}:${mi}</span>
       <div class="col-main">
-        <p><span class="ch">${esc(unesc(r.ch))}</span> · <a href="${r.url}" target="_blank" rel="noopener">${esc(unesc(r.t))}</a>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
+        <p><a href="${r.url}" target="_blank" rel="noopener">${esc(unesc(r.t))}</a> · <span class="ch">${esc(unesc(r.ch))}</span>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
         <div class="track"><div class="fill" style="width:${w}%"></div></div>
       </div>
       <span class="col-v">${fmt(r.v)}</span>
