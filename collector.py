@@ -39,7 +39,7 @@ ARCHIVE_CSV = os.path.join(DATA_DIR, "archive_hits.csv")
 
 API_KEY = os.environ.get("YT_API_KEY", "").strip()
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3.5-flash"
 MAX_SUMMARIES_PER_RUN = 25   # 무료 일일 한도 보호 (25 × 8회/일 = 최대 200회)
 SUMMARIES_JSON = os.path.join(DATA_DIR, "summaries.json")
 
