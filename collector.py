@@ -18,6 +18,7 @@ import os
 import re
 import time
 import urllib.request
+import urllib.error
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 
@@ -37,6 +38,10 @@ SNAP_DIR = os.path.join(DATA_DIR, "snapshots")
 ARCHIVE_CSV = os.path.join(DATA_DIR, "archive_hits.csv")
 
 API_KEY = os.environ.get("YT_API_KEY", "").strip()
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+GEMINI_MODEL = "gemini-2.5-flash"
+MAX_SUMMARIES_PER_RUN = 25   # 무료 일일 한도 보호 (25 × 8회/일 = 최대 200회)
+SUMMARIES_JSON = os.path.join(DATA_DIR, "summaries.json")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -188,6 +193,34 @@ def views_at(hist_list, target, tol_hours=2.0):
     return best
 
 
+# ── 제미나이 요약 ─────────────────────────────────────
+def gemini_summarize(video_url):
+    """유튜브 URL을 제미나이에 보내 한국어 2~3문장 요약. 실패=None, 일일한도='QUOTA'"""
+    body = json.dumps({
+        "contents": [{"parts": [
+            {"file_data": {"file_uri": video_url}},
+            {"text": "이 영상의 내용을 한국어 2~3문장으로 요약해줘. "
+                     "누구에 대한 어떤 사건·이야기인지, 핵심 포인트가 무엇인지 중심으로. "
+                     "서론이나 부연 없이 요약문만 출력해."}
+        ]}]
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}"
+        f":generateContent?key={GEMINI_KEY}",
+        data=body, headers={"Content-Type": "application/json"})
+    try:
+        resp = json.loads(urllib.request.urlopen(req, timeout=120).read().decode("utf-8"))
+        return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            return "QUOTA"
+        print(f"  [gemini {e.code}] {video_url}")
+        return None
+    except Exception as e:
+        print(f"  [gemini 실패] {video_url}: {e}")
+        return None
+
+
 # ── 메인 ──────────────────────────────────────────────
 def main():
     now = datetime.now(KST)
@@ -298,6 +331,27 @@ def main():
                 os.remove(os.path.join(SNAP_DIR, fn))
         except Exception:
             continue
+
+    # 제미나이 요약 — 쇼츠만, 영상당 1회, 최신 우선
+    if GEMINI_KEY:
+        summaries = load_json(SUMMARIES_JSON, {})
+        targets = [(vid, v) for vid, v in videos.items() if v["s"] and vid not in summaries]
+        targets.sort(key=lambda x: x[1]["pub"], reverse=True)
+        done = 0
+        for vid, v in targets[:MAX_SUMMARIES_PER_RUN]:
+            s = gemini_summarize(v["url"])
+            if s == "QUOTA":
+                print("  제미나이 일일 한도 도달 — 다음 사이클에 이어서 생성")
+                break
+            if s:
+                summaries[vid] = s
+                done += 1
+            time.sleep(7)  # 분당 요청 한도 보호
+        for vid in list(summaries.keys()):  # 제거된 영상의 요약 청소
+            if vid not in videos:
+                del summaries[vid]
+        save_json(SUMMARIES_JSON, summaries)
+        print(f"요약 생성: {done}개 (누적 {len(summaries)})")
 
     db["updated"] = now.isoformat(timespec="seconds")
     save_json(VIDEOS_JSON, db)
