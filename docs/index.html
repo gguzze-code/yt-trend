@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>트렌드 스캐너</title>
+<style>
+:root{
+  --bg:#F3F2EF; --card:#FFFFFF; --line:#E4E2DD;
+  --text:#1F1E1C; --muted:#8A867E; --sub:#5C5952;
+  --bar:#7F77DD; --bar-bg:#EFEEF9; --accent-bg:#EDEBFA; --accent:#4A41B8;
+  --up:#0F6E56;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+body{background:var(--bg); color:var(--text);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-size:14px; line-height:1.5; padding:16px; -webkit-font-smoothing:antialiased}
+.wrap{max-width:860px; margin:0 auto}
+.card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px}
+button{font:inherit; font-size:13px; padding:6px 12px; border:1px solid var(--line);
+  border-radius:8px; background:transparent; color:var(--text); cursor:pointer}
+button.on{background:var(--accent-bg); color:var(--accent); border-color:transparent; font-weight:600}
+input{font:inherit; width:100%; padding:9px 11px; border:1px solid var(--line);
+  border-radius:8px; background:var(--bg); color:var(--text)}
+input:focus, button:focus-visible{outline:2px solid var(--bar); outline-offset:1px}
+a{color:inherit; text-decoration:none}
+/* 로그인 */
+#gate{display:flex; justify-content:center; padding:60px 0}
+#gate .box{width:300px}
+#gate h1{font-size:16px; font-weight:600; margin-bottom:16px}
+#gate input{margin-bottom:8px}
+#gate button{width:100%; margin-top:6px; background:var(--text); color:#fff; border:none; padding:9px}
+#gate .err{color:#B4231F; font-size:12px; margin-top:8px; display:none}
+/* 대시보드 */
+#dash{display:none}
+.meta{display:flex; justify-content:flex-end; font-size:12px; color:var(--sub); margin-bottom:10px}
+.controls{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:14px}
+.seg{display:flex; gap:4px}
+.spacer{flex:1}
+.head{display:flex; gap:10px; font-size:12px; color:var(--muted);
+  padding-bottom:6px; border-bottom:1px solid var(--line)}
+.row{display:flex; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line)}
+.col-t{width:74px; flex-shrink:0; font-size:12px; color:var(--muted)}
+.col-main{flex:1; min-width:0}
+.col-main p{font-size:13px; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.col-main .ch{color:var(--muted)}
+.longtag{font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:4px; padding:0 4px}
+.track{height:8px; background:var(--bar-bg); border-radius:2px}
+.fill{height:8px; background:var(--bar); border-radius:2px}
+.col-v{width:56px; text-align:right; font-size:13px; font-weight:600; flex-shrink:0}
+.col-d{width:58px; text-align:right; font-size:12px; color:var(--muted); flex-shrink:0}
+.col-d.up{color:var(--up); font-weight:600}
+.empty{padding:40px 0; text-align:center; color:var(--muted); font-size:13px}
+@media (max-width:520px){
+  body{padding:8px}
+  .col-t{width:44px}
+  .col-t .date{display:none}
+  .col-v{width:50px}
+  .col-d{width:50px; font-size:11px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="gate" class="card">
+  <div class="box">
+    <h1>트렌드 스캐너</h1>
+    <input id="uid" type="text" placeholder="아이디" autocomplete="username">
+    <input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password">
+    <button id="loginBtn">로그인</button>
+    <p class="err" id="err">아이디 또는 비밀번호가 올바르지 않습니다.</p>
+  </div>
+</div>
+
+<div id="dash" class="card">
+  <div class="meta" id="meta"></div>
+  <div class="controls">
+    <div class="seg" id="period">
+      <button data-v="3">3일</button><button data-v="7" class="on">7일</button><button data-v="14">2주</button>
+    </div>
+    <div class="seg" id="sort">
+      <button data-v="new" class="on">최신순</button><button data-v="old">오래된순</button>
+    </div>
+    <div class="seg" id="kind">
+      <button data-v="all">전체</button><button data-v="s" class="on">쇼츠</button><button data-v="l">롱폼</button>
+    </div>
+    <span class="spacer"></span>
+    <button id="chBtn">채널 관리</button>
+  </div>
+  <div class="head">
+    <span class="col-t">업로드</span><span style="flex:1">채널 · 제목</span>
+    <span class="col-v">조회수</span><span class="col-d">전일 +24h</span><span class="col-d">최근 +24h</span>
+  </div>
+  <div id="rows"></div>
+</div>
+
+</div>
+<script>
+/* ── 로그인 게이트 ──
+   비밀번호 변경: hash.html 에서 해시를 만들어 아래 AUTH_HASH 값만 교체 */
+const AUTH_HASH = "f8e68e8d44bfb5314974a97f787d017ff6ac9d0046083f28665fcf96f0cef80c"; /* 초기 admin / 1234 */
+
+async function sha256(text){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function tryLogin(){
+  const h = await sha256(document.getElementById("uid").value.trim()+":"+document.getElementById("pw").value);
+  if(h===AUTH_HASH){ sessionStorage.setItem("auth","1"); openDash(); }
+  else document.getElementById("err").style.display="block";
+}
+document.getElementById("loginBtn").onclick = tryLogin;
+document.getElementById("pw").addEventListener("keydown", e=>{ if(e.key==="Enter") tryLogin(); });
+
+/* ── 대시보드 ── */
+let period=7, sortNew=true, kind="s", DB=null;
+const fmt = n => n==null ? "—" : (n>=10000 ? (n/10000).toFixed(1).replace(/\.0$/,"")+"만" : n.toLocaleString());
+
+function openDash(){
+  document.getElementById("gate").style.display="none";
+  document.getElementById("dash").style.display="block";
+  fetch("data/videos.json?t="+Date.now())
+    .then(r=>r.json())
+    .then(d=>{ DB=d; render(); })
+    .catch(()=>{ document.getElementById("rows").innerHTML='<p class="empty">데이터가 아직 없습니다. 첫 수집이 실행되면 표시됩니다.</p>'; });
+}
+
+function render(){
+  if(!DB) return;
+  const upd = DB.updated ? DB.updated.slice(5,16).replace("T"," ") : "-";
+  document.getElementById("meta").textContent = "마지막 수집 "+upd+" (3시간 간격)";
+  const now = Date.now();
+  let rows = Object.entries(DB.videos).map(([id,v])=>({id,...v,
+      age:(now-new Date(v.pub).getTime())/86400000}))
+    .filter(r=>r.age<=period && (kind==="all"||(kind==="s"&&r.s)||(kind==="l"&&!r.s)));
+  rows.sort((a,b)=> sortNew ? a.age-b.age : b.age-a.age);
+  if(!rows.length){
+    document.getElementById("rows").innerHTML='<p class="empty">조건에 맞는 영상이 없습니다.</p>';
+    return;
+  }
+  const max = Math.max(...rows.map(r=>r.v),1);
+  document.getElementById("rows").innerHTML = rows.map(r=>{
+    const w = Math.max(r.v/max*100, 1.2);
+    const accel = r.dp!=null && r.dn!=null && r.dn>r.dp;
+    const pub = new Date(r.pub);
+    const mm = String(pub.getMonth()+1).padStart(2,"0"), dd=String(pub.getDate()).padStart(2,"0");
+    const hh = String(pub.getHours()).padStart(2,"0"), mi=String(pub.getMinutes()).padStart(2,"0");
+    return `<div class="row">
+      <span class="col-t"><span class="date">${mm}-${dd} </span>${hh}:${mi}</span>
+      <div class="col-main">
+        <p><span class="ch">${esc(r.ch)}</span> · <a href="${r.url}" target="_blank" rel="noopener">${esc(r.t)}</a>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
+        <div class="track"><div class="fill" style="width:${w}%"></div></div>
+      </div>
+      <span class="col-v">${fmt(r.v)}</span>
+      <span class="col-d">${r.dp==null?"—":"+"+fmt(r.dp)}</span>
+      <span class="col-d${accel?" up":""}">${r.dn==null?"—":"+"+fmt(r.dn)}</span>
+    </div>`;
+  }).join("");
+}
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+document.querySelectorAll("#period button").forEach(b=>b.onclick=()=>{period=+b.dataset.v; sel("period",b); render();});
+document.querySelectorAll("#sort button").forEach(b=>b.onclick=()=>{sortNew=b.dataset.v==="new"; sel("sort",b); render();});
+document.querySelectorAll("#kind button").forEach(b=>b.onclick=()=>{kind=b.dataset.v; sel("kind",b); render();});
+function sel(id,btn){ document.querySelectorAll("#"+id+" button").forEach(x=>x.classList.toggle("on",x===btn)); }
+
+/* 채널 관리 → 저장소의 channels.txt 편집 화면 */
+document.getElementById("chBtn").onclick = ()=>{
+  const user = location.hostname.split(".")[0];
+  const repo = location.pathname.split("/")[1] || "";
+  window.open(`https://github.com/${user}/${repo}/edit/main/channels.txt`,"_blank");
+};
+
+if(sessionStorage.getItem("auth")==="1") openDash();
+</script>
+</body>
+</html>

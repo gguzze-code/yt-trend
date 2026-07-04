@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>비밀번호 해시 생성기</title>
+<style>
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:#F3F2EF; color:#1F1E1C; display:flex; justify-content:center; padding:60px 16px}
+.box{background:#fff; border:1px solid #E4E2DD; border-radius:12px; padding:24px; width:360px}
+h1{font-size:15px; margin:0 0 4px}
+p{font-size:12px; color:#8A867E; margin:0 0 16px; line-height:1.6}
+input{font:inherit; width:100%; padding:9px 11px; border:1px solid #E4E2DD; border-radius:8px;
+  background:#F3F2EF; margin-bottom:8px; box-sizing:border-box}
+button{font:inherit; font-size:13px; width:100%; padding:9px; border:none; border-radius:8px;
+  background:#1F1E1C; color:#fff; cursor:pointer; margin-top:4px}
+code{display:block; margin-top:14px; padding:10px; background:#F3F2EF; border-radius:8px;
+  font-size:11px; word-break:break-all; user-select:all}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>비밀번호 해시 생성기</h1>
+  <p>새 아이디·비밀번호를 입력하면 해시가 나옵니다.<br>
+  index.html 의 <b>AUTH_HASH</b> 값을 이 해시로 교체하면 로그인 정보가 바뀝니다.<br>
+  (이 페이지는 아무것도 전송하지 않고, 브라우저 안에서만 계산합니다)</p>
+  <input id="uid" type="text" placeholder="새 아이디">
+  <input id="pw" type="text" placeholder="새 비밀번호">
+  <button id="go">해시 만들기</button>
+  <code id="out">여기에 해시가 표시됩니다</code>
+</div>
+<script>
+document.getElementById("go").onclick = async ()=>{
+  const t = document.getElementById("uid").value.trim()+":"+document.getElementById("pw").value;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+  document.getElementById("out").textContent =
+    [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+};
+</script>
+</body>
+</html>
