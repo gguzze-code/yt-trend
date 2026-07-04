@@ -41,6 +41,7 @@ a{color:inherit; text-decoration:none}
 .head{display:flex; gap:10px; font-size:12px; color:var(--muted);
   padding-bottom:6px; border-bottom:1px solid var(--line)}
 .row{display:flex; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line)}
+.row.dim{opacity:.35}
 .col-t{width:74px; flex-shrink:0; font-size:12px; color:var(--muted)}
 .col-main{flex:1; min-width:0}
 .col-main p{font-size:13px; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -87,6 +88,7 @@ a{color:inherit; text-decoration:none}
       <button data-v="all">전체</button><button data-v="s" class="on">쇼츠</button><button data-v="l">롱폼</button>
     </div>
     <span class="spacer"></span>
+    <input id="q" type="search" placeholder="검색 (제목·채널)" style="width:150px; padding:6px 10px">
     <button id="chBtn">채널 관리</button>
   </div>
   <div class="head">
@@ -115,7 +117,7 @@ document.getElementById("loginBtn").onclick = tryLogin;
 document.getElementById("pw").addEventListener("keydown", e=>{ if(e.key==="Enter") tryLogin(); });
 
 /* ── 대시보드 ── */
-let period=1, sortNew=true, kind="s", DB=null;
+let period=1, sortNew=true, kind="s", q="", DB=null;
 const fmt = n => n==null ? "—" : (n>=10000 ? (n/10000).toFixed(1).replace(/\.0$/,"")+"만" : n.toLocaleString());
 
 function openDash(){
@@ -132,9 +134,16 @@ function render(){
   const upd = DB.updated ? DB.updated.slice(5,16).replace("T"," ") : "-";
   document.getElementById("meta").textContent = "마지막 수집 "+upd+" (3시간 간격)";
   const now = Date.now();
+  const qq = q.trim().toLowerCase();
   let rows = Object.entries(DB.videos).map(([id,v])=>({id,...v,
       age:(now-new Date(v.pub).getTime())/86400000}))
-    .filter(r=>r.age<=period && (kind==="all"||(kind==="s"&&r.s)||(kind==="l"&&!r.s)));
+    .filter(r=>(kind==="all"||(kind==="s"&&r.s)||(kind==="l"&&!r.s)));
+  if(qq){
+    rows = rows.filter(r=>(unesc(r.t)+" "+unesc(r.ch)).toLowerCase().includes(qq));
+    rows.forEach(r=>{ r.dim = r.age>period; });
+  }else{
+    rows = rows.filter(r=>r.age<=period);
+  }
   rows.sort((a,b)=> sortNew ? a.age-b.age : b.age-a.age);
   if(!rows.length){
     document.getElementById("rows").innerHTML='<p class="empty">조건에 맞는 영상이 없습니다.</p>';
@@ -147,7 +156,7 @@ function render(){
     const pub = new Date(r.pub);
     const mm = String(pub.getMonth()+1).padStart(2,"0"), dd=String(pub.getDate()).padStart(2,"0");
     const hh = String(pub.getHours()).padStart(2,"0"), mi=String(pub.getMinutes()).padStart(2,"0");
-    return `<div class="row">
+    return `<div class="row${r.dim?" dim":""}">
       <span class="col-t"><span class="date">${mm}-${dd} </span>${hh}:${mi}</span>
       <div class="col-main">
         <p><a href="${r.url}" target="_blank" rel="noopener">${esc(unesc(r.t))}</a> · <span class="ch">${esc(unesc(r.ch))}</span>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
@@ -167,6 +176,7 @@ document.querySelectorAll("#period button").forEach(b=>b.onclick=()=>{period=+b.
 document.querySelectorAll("#sort button").forEach(b=>b.onclick=()=>{sortNew=b.dataset.v==="new"; sel("sort",b); render();});
 document.querySelectorAll("#kind button").forEach(b=>b.onclick=()=>{kind=b.dataset.v; sel("kind",b); render();});
 function sel(id,btn){ document.querySelectorAll("#"+id+" button").forEach(x=>x.classList.toggle("on",x===btn)); }
+document.getElementById("q").addEventListener("input", e=>{ q=e.target.value; render(); });
 
 /* 채널 관리 → 저장소의 channels.txt 편집 화면 */
 document.getElementById("chBtn").onclick = ()=>{
