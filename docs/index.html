@@ -54,6 +54,15 @@ a{color:inherit; text-decoration:none}
 .col-v{width:56px; text-align:right; font-size:13px; font-weight:600; flex-shrink:0}
 .col-d{width:58px; text-align:right; font-size:12px; color:var(--muted); flex-shrink:0}
 .col-d.up{color:var(--up); font-weight:600}
+.sumbtn{font-size:11px; padding:4px 8px; flex-shrink:0; color:var(--sub)}
+.overlay{position:fixed; inset:0; background:rgba(31,30,28,.5); display:flex;
+  align-items:center; justify-content:center; padding:20px; z-index:10}
+.pop{background:var(--card); border-radius:14px; max-width:480px; width:100%;
+  max-height:70vh; overflow:auto; padding:20px; position:relative}
+.pop h3{font-size:14px; font-weight:600; margin:0 52px 10px 0; line-height:1.5}
+.pop p{font-size:14px; color:var(--sub); white-space:pre-wrap}
+.pop .x{position:absolute; top:10px; right:10px; width:44px; height:44px;
+  font-size:20px; border:none; background:var(--bg); border-radius:10px; line-height:1}
 .empty{padding:40px 0; text-align:center; color:var(--muted); font-size:13px}
 @media (max-width:520px){
   body{padding:8px}
@@ -172,6 +181,7 @@ function render(){
         <p><a href="${r.url}" target="_blank" rel="noopener">${esc(unesc(r.t))}</a> · <span class="ch">${esc(unesc(r.ch))}</span>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
         <div class="track"><div class="fill" style="width:${w}%"></div></div>
       </div>
+      ${r.s?'<button class="sumbtn" data-id="'+r.id+'">요약</button>':''}
       <span class="col-v">${fmt(r.v)}</span>
       <span class="col-d">${r.dp==null?"—":"+"+fmt(r.dp)}</span>
       <span class="col-d${accel?" up":""}">${r.dn==null?"—":"+"+fmt(r.dn)}</span>
@@ -189,6 +199,27 @@ document.getElementById("period").addEventListener("change", e=>{ period=+e.targ
 document.getElementById("sort").addEventListener("change", e=>{ sortMode=e.target.value; render(); });
 document.getElementById("kind").addEventListener("change", e=>{ kind=e.target.value; render(); });
 document.getElementById("q").addEventListener("input", e=>{ q=e.target.value; render(); });
+
+/* 요약 팝업 */
+let SUM=null;
+document.getElementById("rows").addEventListener("click", async e=>{
+  const b = e.target.closest(".sumbtn");
+  if(!b) return;
+  if(SUM===null){
+    try{ SUM = await (await fetch("data/summaries.json?t="+Date.now())).json(); }
+    catch{ SUM = {}; }
+  }
+  const v = DB.videos[b.dataset.id];
+  showPop(unesc(v.t), SUM[b.dataset.id] || "요약이 아직 생성되지 않았습니다.\n다음 수집(최대 3시간) 때 만들어져요.");
+});
+function showPop(title, text){
+  const ov = document.createElement("div");
+  ov.className = "overlay";
+  ov.innerHTML = '<div class="pop"><button class="x" aria-label="닫기">✕</button><h3>'
+    + esc(title) + '</h3><p>' + esc(text) + '</p></div>';
+  ov.addEventListener("click", e=>{ if(e.target===ov || e.target.classList.contains("x")) ov.remove(); });
+  document.body.appendChild(ov);
+}
 
 /* 채널 관리 → 저장소의 channels.txt 편집 화면 */
 document.getElementById("chBtn").onclick = ()=>{
