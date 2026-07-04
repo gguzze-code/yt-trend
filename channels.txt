@@ -136,7 +136,7 @@
 @treevig
 @allissue7350
 @humorshowshow
-
+@타임_리뷰
 # ── 비연예 채널 (스캔 제외, 필요시 # 지우고 활성화) ──
 # @oneulinsight        (정세레이더 - 국제정세)
 # @수앤스마일라이브     (정치)
