@@ -103,7 +103,7 @@ a{color:inherit; text-decoration:none}
   </div>
   <div class="head">
     <span class="col-t">업로드</span><span style="flex:1">제목 · 채널</span>
-    <span class="col-v">조회수</span><span class="col-d">전일 +24h</span><span class="col-d">최근 +24h</span>
+    <span class="col-v">조회수</span><span class="col-d">전 24h</span><span class="col-d">24h</span>
   </div>
   <div id="rows"></div>
 </div>
@@ -167,7 +167,7 @@ function render(){
     const mm = String(pub.getMonth()+1).padStart(2,"0"), dd=String(pub.getDate()).padStart(2,"0");
     const hh = String(pub.getHours()).padStart(2,"0"), mi=String(pub.getMinutes()).padStart(2,"0");
     return `<div class="row${r.dim?" dim":""}">
-      <span class="col-t"><span class="date">${mm}-${dd} </span>${hh}:${mi}</span>
+      <span class="col-t" title="${mm}-${dd} ${hh}:${mi}">${ago(r.age)}</span>
       <div class="col-main">
         <p><a href="${r.url}" target="_blank" rel="noopener">${esc(unesc(r.t))}</a> · <span class="ch">${esc(unesc(r.ch))}</span>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
         <div class="track"><div class="fill" style="width:${w}%"></div></div>
@@ -179,6 +179,9 @@ function render(){
   }).join("");
 }
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const ago = d => d < 1/24 ? Math.max(1, Math.floor(d*1440)) + "m전"
+             : d < 1     ? Math.floor(d*24) + "h전"
+             :             Math.floor(d) + "d전";
 const _ta = document.createElement("textarea");
 const unesc = s => { _ta.innerHTML = s; return _ta.value; };
 
