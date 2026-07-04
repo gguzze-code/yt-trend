@@ -78,7 +78,7 @@ a{color:inherit; text-decoration:none}
   <div class="meta" id="meta"></div>
   <div class="controls">
     <div class="seg" id="period">
-      <button data-v="3">3일</button><button data-v="7" class="on">7일</button><button data-v="14">2주</button>
+      <button data-v="1" class="on">1일</button><button data-v="3">3일</button><button data-v="7">7일</button><button data-v="14">2주</button>
     </div>
     <div class="seg" id="sort">
       <button data-v="new" class="on">최신순</button><button data-v="old">오래된순</button>
@@ -115,7 +115,7 @@ document.getElementById("loginBtn").onclick = tryLogin;
 document.getElementById("pw").addEventListener("keydown", e=>{ if(e.key==="Enter") tryLogin(); });
 
 /* ── 대시보드 ── */
-let period=7, sortNew=true, kind="s", DB=null;
+let period=1, sortNew=true, kind="s", DB=null;
 const fmt = n => n==null ? "—" : (n>=10000 ? (n/10000).toFixed(1).replace(/\.0$/,"")+"만" : n.toLocaleString());
 
 function openDash(){
