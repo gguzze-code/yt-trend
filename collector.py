@@ -12,6 +12,7 @@ GitHub Actions에서 3시간마다 실행됨. 로컬 실행도 가능: python co
 5. 전일 +24h / 최근 +24h 증가분 계산해 videos.json 에 저장
 6. 30일 경과 영상 제거 — 조회수 100만+ 쇼츠만 archive_hits.csv 에 기록
 """
+import html
 import json
 import os
 import re
@@ -102,12 +103,12 @@ def resolve_channel_id(handle, cache):
 def rss_entries(channel_id):
     rss = fetch(f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}")
     ch_m = re.search(r"<title>([^<]+)</title>", rss)
-    ch_name = ch_m.group(1) if ch_m else channel_id
+    ch_name = html.unescape(ch_m.group(1)) if ch_m else channel_id
     out = []
     for e in re.findall(r"<entry>.*?</entry>", rss, re.S):
         try:
             vid = re.search(r"<yt:videoId>([^<]+)</yt:videoId>", e).group(1)
-            title = re.search(r"<title>([^<]*)</title>", e).group(1)
+            title = html.unescape(re.search(r"<title>([^<]*)</title>", e).group(1))
             link = re.search(r'<link rel="alternate" href="([^"]+)"', e).group(1)
             pub = re.search(r"<published>([^<]+)</published>", e).group(1)
             v = re.search(r'views="(\d+)"', e)
