@@ -25,6 +25,7 @@ jobs:
       - name: Run collector
         env:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python collector.py
 
       - name: Commit data
