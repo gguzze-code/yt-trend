@@ -112,6 +112,7 @@ a{color:inherit; text-decoration:none}
     </select>
     <span class="spacer"></span>
     <input id="q" type="search" placeholder="검색 (제목·채널)" style="width:150px; padding:6px 10px">
+    <button id="runBtn">지금 수집</button>
     <button id="chBtn">채널 관리</button>
   </div>
   <div class="head">
@@ -229,6 +230,12 @@ document.getElementById("chBtn").onclick = ()=>{
   const user = location.hostname.split(".")[0];
   const repo = location.pathname.split("/")[1] || "";
   window.open(`https://github.com/${user}/${repo}/edit/main/channels.txt`,"_blank");
+};
+/* 지금 수집 → Run workflow 화면 (우측 Run workflow ▾ → 초록 버튼) */
+document.getElementById("runBtn").onclick = ()=>{
+  const user = location.hostname.split(".")[0];
+  const repo = location.pathname.split("/")[1] || "";
+  window.open(`https://github.com/${user}/${repo}/actions/workflows/collect.yml`,"_blank");
 };
 
 if(sessionStorage.getItem("auth")==="1") openDash();
