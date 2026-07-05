@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>트렌드 스캐너</title>
+<title>트렌드 스캐너 — 증가량</title>
 <style>
 :root{
   --bg:#F3F2EF; --card:#FFFFFF; --line:#E4E2DD;
   --text:#1F1E1C; --muted:#8A867E; --sub:#5C5952;
-  --bar:#7F77DD; --bar-bg:#EFEEF9; --accent-bg:#EDEBFA; --accent:#4A41B8;
+  --bar:#0F6E56; --bar-bg:#E1F5EE; --accent-bg:#EDEBFA; --accent:#4A41B8;
   --up:#0F6E56;
 }
 *{box-sizing:border-box; margin:0; padding:0}
@@ -50,9 +50,11 @@ a{color:inherit; text-decoration:none}
 .col-main p{font-size:13px; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .col-main .ch{color:var(--muted)}
 .longtag{font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:4px; padding:0 4px}
+.newtag{font-size:11px; color:var(--up); border:1px solid var(--up); border-radius:4px; padding:0 4px}
 .track{height:8px; background:var(--bar-bg); border-radius:2px}
 .fill{height:8px; background:var(--bar); border-radius:2px}
-.col-v{width:56px; text-align:right; font-size:13px; font-weight:600; flex-shrink:0}
+.col-v{width:64px; text-align:right; font-size:13px; font-weight:600; flex-shrink:0; color:var(--up)}
+.col-v.none{color:var(--muted); font-weight:400}
 .stat{display:flex; gap:10px; align-items:center; flex-shrink:0}
 .sumbtn{font-size:11px; padding:4px 8px; flex-shrink:0; color:var(--sub)}
 .overlay{position:fixed; inset:0; background:rgba(31,30,28,.5); display:flex;
@@ -80,7 +82,7 @@ a{color:inherit; text-decoration:none}
 
 <div id="gate" class="card">
   <div class="box">
-    <h1>트렌드 스캐너</h1>
+    <h1>트렌드 스캐너 — 증가량</h1>
     <input id="uid" type="text" placeholder="아이디" autocomplete="username">
     <input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password">
     <button id="loginBtn">로그인</button>
@@ -89,19 +91,25 @@ a{color:inherit; text-decoration:none}
 </div>
 
 <div id="dash" class="card">
-  <div class="meta"><a href="delta.html">증가량 대시보드 →</a><span id="meta"></span></div>
+  <div class="meta"><a href="index.html">← 누적 대시보드</a><span id="meta"></span></div>
   <div class="controls">
+    <select id="dperiod">
+      <option value="2" selected>증가 2시간</option>
+      <option value="6">증가 6시간</option>
+      <option value="12">증가 12시간</option>
+      <option value="24">증가 24시간</option>
+    </select>
     <select id="period">
-      <option value="0.5">12시간</option>
-      <option value="1" selected>1일</option>
-      <option value="3">3일</option>
-      <option value="7">7일</option>
-      <option value="14">2주</option>
+      <option value="1">업로드 1일</option>
+      <option value="3">업로드 3일</option>
+      <option value="7">업로드 7일</option>
+      <option value="14" selected>업로드 2주</option>
     </select>
     <select id="sort">
+      <option value="delta" selected>증가량순</option>
+      <option value="pop">누적순</option>
       <option value="new">최신순</option>
       <option value="old">오래된순</option>
-      <option value="pop">인기순</option>
     </select>
     <select id="kind">
       <option value="all">전체</option>
@@ -115,16 +123,15 @@ a{color:inherit; text-decoration:none}
   </div>
   <div class="head">
     <span class="col-t">업로드</span><span style="flex:1">제목 · 채널</span>
-    <div class="stat"><span class="col-v">조회수</span></div>
+    <div class="stat"><span class="col-v" id="dhead">+2h</span></div>
   </div>
   <div id="rows"></div>
 </div>
 
 </div>
 <script>
-/* ── 로그인 게이트 ──
-   비밀번호 변경: hash.html 에서 해시를 만들어 아래 AUTH_HASH 값만 교체 */
-const AUTH_HASH = "f8e68e8d44bfb5314974a97f787d017ff6ac9d0046083f28665fcf96f0cef80c"; /* 초기 admin / 1234 */
+/* ── 로그인 게이트 ── index.html 과 동일 해시 사용 */
+const AUTH_HASH = "f8e68e8d44bfb5314974a97f787d017ff6ac9d0046083f28665fcf96f0cef80c";
 
 async function sha256(text){
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -139,52 +146,82 @@ document.getElementById("loginBtn").onclick = tryLogin;
 document.getElementById("pw").addEventListener("keydown", e=>{ if(e.key==="Enter") tryLogin(); });
 
 /* ── 대시보드 ── */
-let period=1, sortMode="new", kind="s", q="", DB=null;
+let dperiod=2, period=14, sortMode="delta", kind="s", q="", DB=null, SNAP=null;
 const fmt = n => n==null ? "—" : (n>=10000 ? (n/10000).toFixed(1).replace(/\.0$/,"")+"만" : n.toLocaleString());
 
 function openDash(){
   document.getElementById("gate").style.display="none";
   document.getElementById("dash").style.display="block";
-  fetch("data/videos.json?t="+Date.now())
-    .then(r=>r.json())
-    .then(d=>{ DB=d; render(); })
-    .catch(()=>{ document.getElementById("rows").innerHTML='<p class="empty">데이터가 아직 없습니다. 첫 수집이 실행되면 표시됩니다.</p>'; });
+  Promise.all([
+    fetch("data/videos.json?t="+Date.now()).then(r=>r.json()),
+    fetch("data/snapshots_recent.json?t="+Date.now()).then(r=>r.json())
+  ]).then(([d,s])=>{ DB=d; SNAP=s; render(); })
+   .catch(()=>{ document.getElementById("rows").innerHTML='<p class="empty">데이터가 아직 없습니다. 수집이 2회 이상 실행되면 증가량이 표시됩니다.</p>'; });
+}
+
+/* 델타 계산: 시리즈 마지막 값 - (기준 시각에 가장 가까운 과거 스냅샷 값)
+   업로드 자체가 기간 내면 누적 = 증가량(신규) */
+function calcDelta(series, hours, pubSec){
+  if(!series || !series.length) return {d:null, win:null, isNew:false};
+  const last = series[series.length-1];
+  const lastTs = last[0], cur = last[1];
+  const target = lastTs - hours*3600;
+  if(pubSec >= target) return {d:cur, win:(lastTs-pubSec)/3600, isNew:true};
+  let best=null, bestGap=Infinity;
+  for(let i=0;i<series.length-1;i++){
+    const gap = Math.abs(series[i][0]-target);
+    if(gap<bestGap){ bestGap=gap; best=series[i]; }
+  }
+  if(!best) return {d:null, win:null, isNew:false};
+  return {d:Math.max(0, cur-best[1]), win:(lastTs-best[0])/3600, isNew:false};
 }
 
 function render(){
-  if(!DB) return;
-  const upd = DB.updated ? DB.updated.slice(5,16).replace("T"," ") : "-";
-  document.getElementById("meta").textContent = "마지막 수집 "+upd+" (3시간 간격)";
+  if(!DB || !SNAP) return;
+  const upd = SNAP.updated ? SNAP.updated.slice(5,16).replace("T"," ") : "-";
+  document.getElementById("dhead").textContent = "+"+dperiod+"h";
   const now = Date.now();
   const qq = q.trim().toLowerCase();
-  let rows = Object.entries(DB.videos).map(([id,v])=>({id,...v,
-      age:(now-new Date(v.pub).getTime())/86400000}))
-    .filter(r=>(kind==="all"||(kind==="s"&&r.s)||(kind==="l"&&!r.s)));
+  let rows = Object.entries(DB.videos).map(([id,v])=>{
+    const pubMs = new Date(v.pub).getTime();
+    const dd = calcDelta(SNAP.series[id], dperiod, pubMs/1000);
+    return {id, ...v, age:(now-pubMs)/86400000, d:dd.d, win:dd.win, isNew:dd.isNew};
+  }).filter(r=>(kind==="all"||(kind==="s"&&r.s)||(kind==="l"&&!r.s)));
   if(qq){
     rows = rows.filter(r=>(unesc(r.t)+" "+unesc(r.ch)).toLowerCase().includes(qq));
     rows.forEach(r=>{ r.dim = r.age>period; });
   }else{
     rows = rows.filter(r=>r.age<=period);
   }
-  rows.sort((a,b)=> sortMode==="pop" ? b.v-a.v : (sortMode==="new" ? a.age-b.age : b.age-a.age));
+  rows.sort((a,b)=>
+    sortMode==="delta" ? (b.d??-1)-(a.d??-1) :
+    sortMode==="pop"   ? b.v-a.v :
+    sortMode==="new"   ? a.age-b.age : b.age-a.age);
   if(!rows.length){
     document.getElementById("rows").innerHTML='<p class="empty">조건에 맞는 영상이 없습니다.</p>';
     return;
   }
-  const max = Math.max(...rows.map(r=>r.v),1);
+  /* 실측 비교 구간 중앙값 */
+  const wins = rows.map(r=>r.win).filter(w=>w!=null).sort((a,b)=>a-b);
+  const med = wins.length ? wins[Math.floor(wins.length/2)].toFixed(1) : "-";
+  document.getElementById("meta").textContent =
+    "마지막 수집 "+upd+" · 실제 비교 약 "+med+"h 전 대비";
+  const max = Math.max(...rows.map(r=>r.d||0),1);
   document.getElementById("rows").innerHTML = rows.map(r=>{
-    const w = Math.max(r.v/max*100, 1.2);
+    const w = Math.max((r.d||0)/max*100, 1.2);
     const pub = new Date(r.pub);
     const mm = String(pub.getMonth()+1).padStart(2,"0"), dd=String(pub.getDate()).padStart(2,"0");
     const hh = String(pub.getHours()).padStart(2,"0"), mi=String(pub.getMinutes()).padStart(2,"0");
+    const dtxt = r.d==null ? "—" : "+"+fmt(r.d);
+    const dtitle = "누적 "+fmt(r.v)+(r.win!=null?" · 비교 "+r.win.toFixed(1)+"h":"");
     return `<div class="row${r.dim?" dim":""}">
       <span class="col-t" title="${mm}-${dd} ${hh}:${mi}">${ago(r.age)}</span>
       <div class="col-main">
-        <p><a href="${r.url}" target="_blank" rel="noopener">${esc(unesc(r.t))}</a> · <span class="ch">${esc(unesc(r.ch))}</span>${r.s?"":' <span class="longtag">롱폼</span>'}</p>
+        <p><a href="${r.url}" target="_blank" rel="noopener">${esc(unesc(r.t))}</a> · <span class="ch">${esc(unesc(r.ch))}</span>${r.s?"":' <span class="longtag">롱폼</span>'}${r.isNew?' <span class="newtag">신규</span>':''}</p>
         <div class="track"><div class="fill" style="width:${w}%"></div></div>
       </div>
       ${r.s?'<button class="sumbtn" data-id="'+r.id+'">요약</button>':''}
-      <div class="stat"><span class="col-v">${fmt(r.v)}</span></div>
+      <div class="stat"><span class="col-v${r.d==null?" none":""}" title="${dtitle}">${dtxt}</span></div>
     </div>`;
   }).join("");
 }
@@ -195,6 +232,7 @@ const ago = d => d < 1/24 ? Math.max(1, Math.floor(d*1440)) + "m전"
 const _ta = document.createElement("textarea");
 const unesc = s => { _ta.innerHTML = s; return _ta.value; };
 
+document.getElementById("dperiod").addEventListener("change", e=>{ dperiod=+e.target.value; render(); });
 document.getElementById("period").addEventListener("change", e=>{ period=+e.target.value; render(); });
 document.getElementById("sort").addEventListener("change", e=>{ sortMode=e.target.value; render(); });
 document.getElementById("kind").addEventListener("change", e=>{ kind=e.target.value; render(); });
@@ -227,7 +265,7 @@ document.getElementById("chBtn").onclick = ()=>{
   const repo = location.pathname.split("/")[1] || "";
   window.open(`https://github.com/${user}/${repo}/edit/main/channels.txt`,"_blank");
 };
-/* 지금 수집 → Run workflow 화면 (우측 Run workflow ▾ → 초록 버튼) */
+/* 지금 수집 → Run workflow 화면 */
 document.getElementById("runBtn").onclick = ()=>{
   const user = location.hostname.split(".")[0];
   const repo = location.pathname.split("/")[1] || "";
