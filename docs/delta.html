@@ -55,6 +55,7 @@ a{color:inherit; text-decoration:none}
 .fill{height:8px; background:var(--bar); border-radius:2px}
 .col-v{width:64px; text-align:right; font-size:13px; font-weight:600; flex-shrink:0; color:var(--up)}
 .col-v.none{color:var(--muted); font-weight:400}
+.col-cum{width:52px; text-align:right; font-size:12px; color:var(--muted); flex-shrink:0}
 .stat{display:flex; gap:10px; align-items:center; flex-shrink:0}
 .sumbtn{font-size:11px; padding:4px 8px; flex-shrink:0; color:var(--sub)}
 .overlay{position:fixed; inset:0; background:rgba(31,30,28,.5); display:flex;
@@ -71,8 +72,9 @@ a{color:inherit; text-decoration:none}
   .row, .head{gap:6px}
   .col-t{width:38px}
   .col-t .date{display:none}
-  .stat{width:auto}
+  .stat{flex-direction:column; align-items:flex-end; gap:1px; width:64px}
   .col-v{width:auto}
+  .col-cum{width:auto; font-size:11px}
   .sumbtn{padding:3px 6px; font-size:10px}
 }
 </style>
@@ -123,7 +125,7 @@ a{color:inherit; text-decoration:none}
   </div>
   <div class="head">
     <span class="col-t">업로드</span><span style="flex:1">제목 · 채널</span>
-    <div class="stat"><span class="col-v" id="dhead">+2h</span></div>
+    <div class="stat"><span class="col-v" id="dhead">+2h</span><span class="col-cum">누적</span></div>
   </div>
   <div id="rows"></div>
 </div>
@@ -213,7 +215,7 @@ function render(){
     const mm = String(pub.getMonth()+1).padStart(2,"0"), dd=String(pub.getDate()).padStart(2,"0");
     const hh = String(pub.getHours()).padStart(2,"0"), mi=String(pub.getMinutes()).padStart(2,"0");
     const dtxt = r.d==null ? "—" : "+"+fmt(r.d);
-    const dtitle = "누적 "+fmt(r.v)+(r.win!=null?" · 비교 "+r.win.toFixed(1)+"h":"");
+    const dtitle = r.win!=null ? "비교 "+r.win.toFixed(1)+"h 전 대비" : "";
     return `<div class="row${r.dim?" dim":""}">
       <span class="col-t" title="${mm}-${dd} ${hh}:${mi}">${ago(r.age)}</span>
       <div class="col-main">
@@ -221,7 +223,7 @@ function render(){
         <div class="track"><div class="fill" style="width:${w}%"></div></div>
       </div>
       ${r.s?'<button class="sumbtn" data-id="'+r.id+'">요약</button>':''}
-      <div class="stat"><span class="col-v${r.d==null?" none":""}" title="${dtitle}">${dtxt}</span></div>
+      <div class="stat"><span class="col-v${r.d==null?" none":""}" title="${dtitle}">${dtxt}</span><span class="col-cum">${fmt(r.v)}</span></div>
     </div>`;
   }).join("");
 }
@@ -248,7 +250,7 @@ document.getElementById("rows").addEventListener("click", async e=>{
     catch{ SUM = {}; }
   }
   const v = DB.videos[b.dataset.id];
-  showPop(unesc(v.t), SUM[b.dataset.id] || "요약이 아직 생성되지 않았습니다.\n다음 수집(최대 3시간) 때 만들어져요.");
+  showPop(unesc(v.t), SUM[b.dataset.id] || "요약이 아직 생성되지 않았습니다.\n다음 수집 때 만들어져요.");
 });
 function showPop(title, text){
   const ov = document.createElement("div");

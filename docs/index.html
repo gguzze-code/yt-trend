@@ -154,7 +154,7 @@ function openDash(){
 function render(){
   if(!DB) return;
   const upd = DB.updated ? DB.updated.slice(5,16).replace("T"," ") : "-";
-  document.getElementById("meta").textContent = "마지막 수집 "+upd+" (3시간 간격)";
+  document.getElementById("meta").textContent = "마지막 수집 "+upd+" (약 2h 주기)";
   const now = Date.now();
   const qq = q.trim().toLowerCase();
   let rows = Object.entries(DB.videos).map(([id,v])=>({id,...v,
@@ -210,7 +210,7 @@ document.getElementById("rows").addEventListener("click", async e=>{
     catch{ SUM = {}; }
   }
   const v = DB.videos[b.dataset.id];
-  showPop(unesc(v.t), SUM[b.dataset.id] || "요약이 아직 생성되지 않았습니다.\n다음 수집(최대 3시간) 때 만들어져요.");
+  showPop(unesc(v.t), SUM[b.dataset.id] || "요약이 아직 생성되지 않았습니다.\n다음 수집 때 만들어져요.");
 });
 function showPop(title, text){
   const ov = document.createElement("div");
