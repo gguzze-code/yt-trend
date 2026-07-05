@@ -39,7 +39,7 @@ ARCHIVE_CSV = os.path.join(DATA_DIR, "archive_hits.csv")
 
 API_KEY = os.environ.get("YT_API_KEY", "").strip()
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = "gemini-3.5-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 MAX_SUMMARIES_PER_RUN = 25   # 무료 일일 한도 보호 (25 × 8회/일 = 최대 200회)
 SUMMARIES_JSON = os.path.join(DATA_DIR, "summaries.json")
 
@@ -199,9 +199,12 @@ def gemini_summarize(video_url):
     body = json.dumps({
         "contents": [{"parts": [
             {"file_data": {"file_uri": video_url}},
-            {"text": "이 영상의 내용을 한국어 2~3문장으로 요약해줘. "
-                     "누구에 대한 어떤 사건·이야기인지, 핵심 포인트가 무엇인지 중심으로. "
-                     "서론이나 부연 없이 요약문만 출력해."}
+            {"text": "이 영상을 보고 아래 두 항목만 출력해줘.\n"
+                     "후킹: 영상 시작 부분(첫 3~5초)의 첫 한두 문장을 각색 없이 "
+                     "나레이션·자막에 나온 그대로 받아써. 자막과 나레이션이 다르면 둘 다.\n"
+                     "요약: 영상 내용을 한국어 2~3문장으로. 누구에 대한 어떤 사건·이야기인지, "
+                     "핵심 포인트가 무엇인지 중심으로.\n"
+                     "서론이나 부연 없이 '후킹:'과 '요약:' 두 항목만 출력해."}
         ]}]
     }).encode("utf-8")
     req = urllib.request.Request(
