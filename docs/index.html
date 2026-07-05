@@ -52,8 +52,6 @@ a{color:inherit; text-decoration:none}
 .track{height:8px; background:var(--bar-bg); border-radius:2px}
 .fill{height:8px; background:var(--bar); border-radius:2px}
 .col-v{width:56px; text-align:right; font-size:13px; font-weight:600; flex-shrink:0}
-.col-d{width:86px; text-align:right; font-size:12px; color:var(--muted); flex-shrink:0}
-.col-d.up{color:var(--up); font-weight:600}
 .stat{display:flex; gap:10px; align-items:center; flex-shrink:0}
 .sumbtn{font-size:11px; padding:4px 8px; flex-shrink:0; color:var(--sub)}
 .overlay{position:fixed; inset:0; background:rgba(31,30,28,.5); display:flex;
@@ -70,9 +68,8 @@ a{color:inherit; text-decoration:none}
   .row, .head{gap:6px}
   .col-t{width:38px}
   .col-t .date{display:none}
-  .stat{flex-direction:column; align-items:flex-end; gap:1px; width:76px}
+  .stat{width:auto}
   .col-v{width:auto}
-  .col-d{width:auto; font-size:11px}
   .sumbtn{padding:3px 6px; font-size:10px}
 }
 </style>
@@ -117,7 +114,7 @@ a{color:inherit; text-decoration:none}
   </div>
   <div class="head">
     <span class="col-t">업로드</span><span style="flex:1">제목 · 채널</span>
-    <div class="stat"><span class="col-v">조회수</span><span class="col-d">24h증감</span></div>
+    <div class="stat"><span class="col-v">조회수</span></div>
   </div>
   <div id="rows"></div>
 </div>
@@ -176,7 +173,6 @@ function render(){
   const max = Math.max(...rows.map(r=>r.v),1);
   document.getElementById("rows").innerHTML = rows.map(r=>{
     const w = Math.max(r.v/max*100, 1.2);
-    const accel = r.dp!=null && r.dn!=null && r.dn>r.dp;
     const pub = new Date(r.pub);
     const mm = String(pub.getMonth()+1).padStart(2,"0"), dd=String(pub.getDate()).padStart(2,"0");
     const hh = String(pub.getHours()).padStart(2,"0"), mi=String(pub.getMinutes()).padStart(2,"0");
@@ -187,8 +183,7 @@ function render(){
         <div class="track"><div class="fill" style="width:${w}%"></div></div>
       </div>
       ${r.s?'<button class="sumbtn" data-id="'+r.id+'">요약</button>':''}
-      <div class="stat"><span class="col-v">${fmt(r.v)}</span>
-      <span class="col-d${accel?" up":""}">${r.dn==null?"—":(accel?"+":"")+fmt(r.dn)+"/"+(r.dp==null?"—":fmt(r.dp))}</span></div>
+      <div class="stat"><span class="col-v">${fmt(r.v)}</span></div>
     </div>`;
   }).join("");
 }
