@@ -39,8 +39,9 @@ ARCHIVE_CSV = os.path.join(DATA_DIR, "archive_hits.csv")
 
 API_KEY = os.environ.get("YT_API_KEY", "").strip()
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = "gemini-2.5-flash"
-MAX_SUMMARIES_PER_RUN = 25   # 무료 일일 한도 보호 (25 × 8회/일 = 최대 200회)
+GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash",
+                 "gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-3.1-pro-preview"]
+MAX_SUMMARIES_PER_RUN = 25   # 사이클당 상한 (모델 전환으로 일일 총량 확장)
 SUMMARIES_JSON = os.path.join(DATA_DIR, "summaries.json")
 
 HEADERS = {
@@ -194,8 +195,8 @@ def views_at(hist_list, target, tol_hours=2.0):
 
 
 # ── 제미나이 요약 ─────────────────────────────────────
-def gemini_summarize(video_url):
-    """유튜브 URL을 제미나이에 보내 한국어 2~3문장 요약. 실패=None, 일일한도='QUOTA'"""
+def gemini_summarize(video_url, model):
+    """유튜브 URL을 제미나이에 보내 후킹+요약 생성. 실패=None, 해당 모델 한도='QUOTA'"""
     body = json.dumps({
         "contents": [{"parts": [
             {"file_data": {"file_uri": video_url}},
@@ -208,7 +209,7 @@ def gemini_summarize(video_url):
         ]}]
     }).encode("utf-8")
     req = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}"
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}"
         f":generateContent?key={GEMINI_KEY}",
         data=body, headers={"Content-Type": "application/json"})
     try:
@@ -217,6 +218,8 @@ def gemini_summarize(video_url):
     except urllib.error.HTTPError as e:
         if e.code == 429:
             return "QUOTA"
+        if e.code == 404:
+            return "NOMODEL"
         print(f"  [gemini {e.code}] {video_url}")
         return None
     except Exception as e:
@@ -335,16 +338,24 @@ def main():
         except Exception:
             continue
 
-    # 제미나이 요약 — 쇼츠만, 영상당 1회, 최신 우선
+    # 제미나이 요약 — 쇼츠만, 영상당 1회, 조회수 높은 것 우선, 한도 시 모델 전환
     if GEMINI_KEY:
         summaries = load_json(SUMMARIES_JSON, {})
         targets = [(vid, v) for vid, v in videos.items() if v["s"] and vid not in summaries]
-        targets.sort(key=lambda x: x[1]["pub"], reverse=True)
-        done = 0
+        targets.sort(key=lambda x: x[1]["v"], reverse=True)  # 튀는 영상부터 한도 사용
+        done, mi = 0, 0
         for vid, v in targets[:MAX_SUMMARIES_PER_RUN]:
-            s = gemini_summarize(v["url"])
-            if s == "QUOTA":
-                print("  제미나이 일일 한도 도달 — 다음 사이클에 이어서 생성")
+            s = None
+            while mi < len(GEMINI_MODELS):
+                s = gemini_summarize(v["url"], GEMINI_MODELS[mi])
+                if s not in ("QUOTA", "NOMODEL"):
+                    break
+                reason = "한도 도달" if s == "QUOTA" else "모델 이름 없음"
+                mi += 1
+                if mi < len(GEMINI_MODELS):
+                    print(f"  {reason} → 모델 전환: {GEMINI_MODELS[mi]}")
+            if mi >= len(GEMINI_MODELS):
+                print("  모든 모델 한도 도달 — 다음 사이클에 이어서 생성")
                 break
             if s:
                 summaries[vid] = s
