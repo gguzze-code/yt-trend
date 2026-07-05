@@ -1,0 +1,331 @@
+{
+ "meta": {
+  "version": 1,
+  "created": "2026-07-05T20:30+09:00",
+  "target_metric": "views_at_24h_after_upload",
+  "scoring": "확정(2026-07-05): primary ② ratio_error 0.5~2.0 + ③ rank_correlation(spearman). 범위적중은 참고",
+  "goal": "최종 산출물 = 소재 선정·제목·후킹 작성 실전 법칙집 (태그별 효과 크기 기반)"
+ },
+ "hypotheses": [
+  {
+   "id": "H1",
+   "v": 1,
+   "status": "active",
+   "text": "채널 기초체력(최근 24h도달 중앙값)이 예측의 앵커다",
+   "support": 0,
+   "against": 0
+  },
+  {
+   "id": "H2",
+   "v": 1,
+   "status": "active",
+   "text": "합류 소재(2주 내 다채널 반복 인물)는 갈등형 채널에서 x1.5~3 배수",
+   "support": 0,
+   "against": 0
+  },
+  {
+   "id": "H3",
+   "v": 1,
+   "status": "active",
+   "text": "구체적 낙차(숫자/침묵/신분)가 있는 제목이 막연한 근황형보다 높다",
+   "support": 0,
+   "against": 0
+  },
+  {
+   "id": "H4",
+   "v": 1,
+   "status": "active",
+   "text": "선점(첫 커버)은 합류보다 리스크가 크지만 터지면 상방이 크다",
+   "support": 0,
+   "against": 0
+  },
+  {
+   "id": "H5",
+   "v": 1,
+   "status": "active",
+   "text": "동일 소재+동일 페이로드 중복 커버 시 채널 파워 낮은 쪽이 조회수를 뺏긴다",
+   "support": 0,
+   "against": 0
+  }
+ ],
+ "hypothesis_history": [],
+ "channel_anchors": {
+  "note": "24h 도달 조회수 중앙값. (표본수) 병기. 세션마다 표본 누적 갱신",
+  "스타포커스": {
+   "median_24h": 1352422,
+   "n": 1,
+   "caution": "n=1이 메가히트라 과대추정 가능"
+  },
+  "이게맏나": {
+   "median_24h": 952726,
+   "n": 1
+  },
+  "베스트오늘": {
+   "median_24h": 406889,
+   "n": 9
+  },
+  "노빠꾸패밀리": {
+   "median_24h": 374283,
+   "n": 2
+  },
+  "이슈찾아요": {
+   "median_24h": 296171,
+   "n": 2
+  },
+  "가요의기록": {
+   "median_24h": 202624,
+   "n": 2
+  },
+  "연예한방뉴스": {
+   "median_24h": 190032,
+   "n": 1
+  },
+  "특종세상 - 그때 그 사람": {
+   "median_24h": 128757,
+   "n": 3
+  },
+  "밤작가tv": {
+   "median_24h": 63189,
+   "n": 11,
+   "caution": "분산 큼(최대 607k) — 소재 민감 채널"
+  },
+  "기자수첩": {
+   "median_24h": 27026,
+   "n": 14
+  },
+  "온더넥스트": {
+   "median_24h": 20960,
+   "n": 2
+  }
+ },
+ "rounds": [
+  {
+   "round": 1,
+   "predicted_at": "2026-07-05T20:01:51+09:00",
+   "scored": false,
+   "predictions": [
+    {
+     "id": "star_baek",
+     "ch": "스타포커스",
+     "vid_hint": "대패삼겹살 원조가 본인이라는 백종원에 법원의 한마디",
+     "pub": "2026-07-05T18:00+09:00 approx",
+     "age_at_pred_h": 2.0,
+     "views_at_pred": 13706,
+     "pred_24h": 700000,
+     "range": [
+      400000,
+      1200000
+     ],
+     "hypotheses_tested": [
+      "H1",
+      "H4"
+     ],
+     "reasoning": "채널 최상위 파워 + '법원의 한마디' 페이로드 + 백종원 소재 선점. 축구 클러스터 밖이라 합류 배수 없음",
+     "tags": {
+      "payload": "한마디",
+      "gap": "없음",
+      "number": false,
+      "emotion_word": false,
+      "topic_state": "선점",
+      "category": "갈등뉴스",
+      "title_len": 28
+     }
+    },
+    {
+     "id": "best_kang",
+     "ch": "베스트오늘",
+     "vid_hint": "홍명보 당당한 태도에 85세 강부자까지 나서서 외친 쓴소리",
+     "age_at_pred_h": 3.1,
+     "views_at_pred": 29591,
+     "pred_24h": 550000,
+     "range": [
+      350000,
+      850000
+     ],
+     "hypotheses_tested": [
+      "H1",
+      "H2",
+      "H3",
+      "H5"
+     ],
+     "reasoning": "앵커 407k(n=9) x 홍명보 합류배수(48h 내 17개 채널). '85세'+'쓴소리' 낙차 명시",
+     "tags": {
+      "payload": "한마디",
+      "gap": "숫자",
+      "number": true,
+      "emotion_word": true,
+      "topic_state": "합류",
+      "category": "스포츠",
+      "title_len": 32
+     }
+    },
+    {
+     "id": "bam_kang",
+     "ch": "밤작가tv",
+     "vid_hint": "홍명보 당당한 태도에 85세 강부자 직접나서 일침",
+     "age_at_pred_h": 2.1,
+     "views_at_pred": 11635,
+     "pred_24h": 120000,
+     "range": [
+      60000,
+      250000
+     ],
+     "hypotheses_tested": [
+      "H2",
+      "H5"
+     ],
+     "reasoning": "베스트오늘과 동일 소재·동일 페이로드 중복 — H5 검증 쌍. 앵커 63k에 합류배수 적용하되 중복 페널티",
+     "tags": {
+      "payload": "한마디",
+      "gap": "숫자",
+      "number": true,
+      "emotion_word": true,
+      "topic_state": "중복",
+      "category": "스포츠",
+      "title_len": 27
+     }
+    },
+    {
+     "id": "bam_jung",
+     "ch": "밤작가tv",
+     "vid_hint": "정동원 해병대 후회 이찬원에 통화해 오열",
+     "age_at_pred_h": 3.1,
+     "views_at_pred": 25976,
+     "pred_24h": 100000,
+     "range": [
+      50000,
+      200000
+     ],
+     "hypotheses_tested": [
+      "H1",
+      "H2"
+     ],
+     "reasoning": "정동원·이찬원 소형 클러스터(3~4개). '오열' 감정 방아쇠 있으나 클러스터 열기 약함",
+     "tags": {
+      "payload": "반응",
+      "gap": "감정",
+      "number": false,
+      "emotion_word": true,
+      "topic_state": "합류",
+      "category": "근황·미담",
+      "title_len": 22
+     }
+    },
+    {
+     "id": "ige_health",
+     "ch": "이게맏나",
+     "vid_hint": "건강 이슈가 있던 유튜버 근황",
+     "age_at_pred_h": 0.8,
+     "views_at_pred": 26064,
+     "pred_24h": 400000,
+     "range": [
+      150000,
+      900000
+     ],
+     "hypotheses_tested": [
+      "H1",
+      "H3"
+     ],
+     "reasoning": "앵커 표본 1개(952k)라 불확실. 정체 은닉형이지만 낙차 서술 없음(H3 감점) → 넓은 범위",
+     "tags": {
+      "payload": "정체",
+      "gap": "없음",
+      "number": false,
+      "emotion_word": false,
+      "topic_state": "단독",
+      "category": "근황·미담",
+      "title_len": 16
+     }
+    },
+    {
+     "id": "best_byun",
+     "ch": "베스트오늘",
+     "vid_hint": "변진섭 골프공 맞고 50바늘 꿰멘 황영조의 뼈때린 한마디",
+     "age_at_pred_h": 0.5,
+     "views_at_pred": 879,
+     "pred_24h": 300000,
+     "range": [
+      150000,
+      500000
+     ],
+     "hypotheses_tested": [
+      "H1",
+      "H3"
+     ],
+     "reasoning": "앵커 407k이나 뉴스성 없는 아카이브 예능. '50바늘' 숫자낙차 + '한마디' 페이로드",
+     "tags": {
+      "payload": "한마디",
+      "gap": "숫자",
+      "number": true,
+      "emotion_word": true,
+      "topic_state": "단독",
+      "category": "아카이브",
+      "title_len": 31
+     }
+    },
+    {
+     "id": "yeon_oh",
+     "ch": "연예가스타",
+     "vid_hint": "이혼 11년 만에 재혼한 오윤아 새신랑 놀라운 정체",
+     "age_at_pred_h": 1.0,
+     "views_at_pred": 4474,
+     "pred_24h": 120000,
+     "range": [
+      50000,
+      300000
+     ],
+     "hypotheses_tested": [
+      "H2",
+      "H3"
+     ],
+     "reasoning": "오윤아 합류 소재(48h 내 11개 채널·누적 965k) x '11년 만에' 시간낙차 + '정체' 페이로드. 채널 앵커 없음",
+     "tags": {
+      "payload": "정체",
+      "gap": "시간",
+      "number": true,
+      "emotion_word": true,
+      "topic_state": "합류",
+      "category": "가족사",
+      "title_len": 28
+     }
+    },
+    {
+     "id": "eum_kang",
+     "ch": "추억의 음악다방",
+     "vid_hint": "90년대 톱스타로 살아남기 어려웠던 이유 #강수지",
+     "age_at_pred_h": 0.9,
+     "views_at_pred": 4161,
+     "pred_24h": 60000,
+     "range": [
+      25000,
+      150000
+     ],
+     "hypotheses_tested": [
+      "H1"
+     ],
+     "reasoning": "에버그린 채널 — 24h 스퍼트보다 롱테일형. '이유' 페이로드 있으나 초반 속도 낮을 것. 채널 앵커 없음",
+     "tags": {
+      "payload": "이유",
+      "gap": "없음",
+      "number": false,
+      "emotion_word": false,
+      "topic_state": "단독",
+      "category": "아카이브",
+      "title_len": 27
+     }
+    }
+   ]
+  }
+ ],
+ "sessions": [
+  {
+   "date": "2026-07-05",
+   "action": "실험 개시. 가설 v1 5개 수립, R1 예측 8건. 채점 마감: 07-06 저녁(업로드+26~30h 내)"
+  },
+  {
+   "date": "2026-07-05",
+   "action": "채점 기준 ②+③ 확정, 제목 요소 태깅 체계 도입, R1 예측 8건에 태그 소급 적용(예측치·근거는 불변)"
+  }
+ ],
+ "promoted_laws": []
+}
