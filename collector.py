@@ -9,7 +9,7 @@ GitHub Actions에서 3시간마다 실행됨. 로컬 실행도 가능: python co
 3. YouTube Data API 로 추적 대상(2주 이내) 영상 통계 일괄 갱신 (50개 묶음)
    - API 키 없으면 RSS 조회수로 대체 (기능 저하 모드)
 4. snapshots/YYYY-MM-DD.jsonl 에 이력 1줄씩 적재
-5. 전일 +24h / 최근 +24h 증가분 계산해 videos.json 에 저장
+5. 최근 48h 스냅샷 시리즈를 snapshots_recent.json 으로 export (델타 페이지용)
 6. 30일 경과 영상 제거 — 조회수 100만+ 쇼츠만 archive_hits.csv 에 기록
 """
 import html
@@ -35,6 +35,8 @@ DATA_DIR = os.path.join(BASE, "docs", "data")
 CHANNELS_JSON = os.path.join(DATA_DIR, "channels.json")
 VIDEOS_JSON = os.path.join(DATA_DIR, "videos.json")
 SNAP_DIR = os.path.join(DATA_DIR, "snapshots")
+SNAP_RECENT_JSON = os.path.join(DATA_DIR, "snapshots_recent.json")
+DELTA_WINDOW_H = 48   # 델타 페이지용 시리즈 보존 시간
 ARCHIVE_CSV = os.path.join(DATA_DIR, "archive_hits.csv")
 
 API_KEY = os.environ.get("YT_API_KEY", "").strip()
@@ -184,16 +186,6 @@ def load_recent_snapshots(now):
     return hist
 
 
-def views_at(hist_list, target, tol_hours=2.0):
-    """target 시각에 가장 가까운 스냅샷 조회수 (허용오차 내). 없으면 None"""
-    best, best_gap = None, tol_hours * 3600
-    for ts, v in hist_list:
-        gap = abs((ts - target).total_seconds())
-        if gap <= best_gap:
-            best, best_gap = v, gap
-    return best
-
-
 # ── 제미나이 요약 ─────────────────────────────────────
 def gemini_summarize(video_url, model):
     """유튜브 URL을 제미나이에 보내 후킹+요약 생성. 실패=None, 해당 모델 한도='QUOTA'"""
@@ -269,7 +261,7 @@ def main():
                     "ch": ch_name, "t": e["title"], "url": e["url"],
                     "s": e["shorts"], "pub": e["pub"], "dur": None,
                     "v": e["views"], "lk": e["likes"], "cm": None,
-                    "dp": None, "dn": None, "upd": now.isoformat(timespec="seconds"),
+                    "upd": now.isoformat(timespec="seconds"),
                 }
                 new_count += 1
             elif not API_KEY:  # API 없으면 RSS 값으로라도 갱신
@@ -295,15 +287,17 @@ def main():
                 videos[vid]["dur"] = st["dur"]
         print(f"API 갱신: {len(stats)}개")
 
-    # 증가분 계산 (스냅샷 이력 기반)
+    # 델타 페이지용 최근 스냅샷 export (48h 롤링, 현재 실행값 포함)
     hist = load_recent_snapshots(now)
+    cutoff = now - timedelta(hours=DELTA_WINDOW_H)
+    recent = {}
     for vid in track_ids:
-        h = hist.get(vid, [])
-        cur = videos[vid]["v"]
-        v24 = views_at(h, now - timedelta(hours=24))
-        v48 = views_at(h, now - timedelta(hours=48))
-        videos[vid]["dn"] = (cur - v24) if v24 is not None else None
-        videos[vid]["dp"] = (v24 - v48) if (v24 is not None and v48 is not None) else None
+        series = [[int(ts.timestamp()), v] for ts, v in hist.get(vid, []) if ts >= cutoff]
+        series.append([int(now.timestamp()), videos[vid]["v"]])
+        recent[vid] = series
+    save_json(SNAP_RECENT_JSON, {"updated": now.isoformat(timespec="seconds"),
+                                 "series": recent})
+    print(f"델타 시리즈 export: {len(recent)}개 영상")
 
     # 오늘 스냅샷 적재
     snap_path = os.path.join(SNAP_DIR, now.strftime("%Y-%m-%d") + ".jsonl")
